@@ -133,20 +133,25 @@ class SentenceProcessor:
     def __init__(self):
         try:
             self._client = genai.Client(api_key=GEMINI_API_KEY)
-            self._model_name = "gemini-2.0-flash"
-            print("[ISL] Gemini Client ready.")
+            self._model_names = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"]
+            self._model_name = self._model_names[0]
+            print(f"[ISL] Gemini Client ready with model {self._model_name}.")
         except Exception as e:
             print(f"[ISL] Warning: Failed to init Gemini client: {e}")
             self._client = None
             
-        # TTS Setup
-        self._tts_engine = pyttsx3.init()
-        self._tts_engine.setProperty('rate', 150)
-        self._tts_engine.setProperty('volume', 1.0)
-        voices = self._tts_engine.getProperty('voices')
-        if len(voices) > 1:
-            self._tts_engine.setProperty('voice', voices[1].id)
-        print("[ISL] Text-to-speech ready.")
+        # TTS Setup (safe init)
+        self._tts_engine = None
+        try:
+            self._tts_engine = pyttsx3.init()
+            self._tts_engine.setProperty('rate', 150)
+            self._tts_engine.setProperty('volume', 1.0)
+            voices = self._tts_engine.getProperty('voices')
+            if len(voices) > 1:
+                self._tts_engine.setProperty('voice', voices[1].id)
+            print("[ISL] Text-to-speech ready.")
+        except Exception as e:
+            print(f"[ISL] Note: pyttsx3 init skipped ({e}). Browser TTS will be used.")
 
         # API Caches to prevent quota limits
         self._sign_cache = {}
@@ -288,6 +293,8 @@ class SentenceProcessor:
 
     def speak(self, text):
         """Speak text aloud in a background thread."""
+        if not self._tts_engine or not text:
+            return
         def _speak():
             try:
                 self._tts_engine.say(text)

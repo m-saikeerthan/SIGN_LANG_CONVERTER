@@ -1,12 +1,3 @@
-"""
-ISL Web Application — Flask-SocketIO backend.
-Receives webcam frames via WebSocket, processes with MediaPipe + TFLite,
-returns real-time predictions with annotated frames, handles grammar
-correction + Hindi translation via Gemini, and text-to-sign image generation.
-
-Usage: python web/app.py
-Then open http://localhost:5000 in your browser.
-"""
 
 import os
 import sys
@@ -23,7 +14,7 @@ sys.path.insert(0, SRC_DIR)
 
 import numpy as np
 import cv2
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 
 print("[ISL Web] Loading ISL modules...")
@@ -33,12 +24,13 @@ from config import NO_HAND_TIMEOUT
 from hand_tracker import HandTracker
 from gesture_classifier import GestureClassifier
 from sentence_processor import SentenceProcessor
+from dynamic_video_processor import DynamicVideoProcessor
 
 # ─── App Setup ───────────────────────────────────────────────────────
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'isl-detector-secret'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading',
-                    max_http_buffer_size=10 * 1024 * 1024)
+                    max_http_buffer_size=50 * 1024 * 1024)
 
 # ─── ISL Pipeline ────────────────────────────────────────────────────
 print("[ISL Web] Initializing hand tracker...")
@@ -52,6 +44,10 @@ classifier = GestureClassifier()
 print("[ISL Web] Initializing sentence processor...")
 sys.stdout.flush()
 sentence_processor = SentenceProcessor()
+
+print("[ISL Web] Initializing dynamic video processor...")
+sys.stdout.flush()
+video_processor = DynamicVideoProcessor()
 
 # ─── Session State ───────────────────────────────────────────────────
 sentence = []
@@ -229,6 +225,70 @@ def handle_text_to_sign(data):
                 r['description'] = desc_map.get(r['word'], 'Description not available')
 
     emit('sign_results', {'words': results})
+
+
+# ─── Dynamic Video Processing API ─────────────────────────────────────
+@app.route('/api/process_video', methods=['POST'])
+def handle_process_video_http():
+    """
+    HTTP POST endpoint to process a recorded or uploaded video.
+    Accepts multipart/form-data with file 'video' or JSON with 'video' base64 string.
+    """
+    try:
+        video_bytes = None
+
+        if 'video' in request.files:
+            file = request.files['video']
+            video_bytes = file.read()
+            print(f"[ISL Web] Received video file upload: {len(video_bytes)} bytes", flush=True)
+        elif request.is_json and 'video' in request.json:
+            b64_str = request.json['video']
+            if ',' in b64_str:
+                b64_str = b64_str.split(',')[1]
+            video_bytes = base64.b64decode(b64_str)
+            print(f"[ISL Web] Received JSON base64 video: {len(video_bytes)} bytes", flush=True)
+
+        if not video_bytes:
+            return jsonify({'status': 'error', 'message': 'No video data provided'}), 400
+
+        result = video_processor.process_video(video_bytes)
+        return jsonify({
+            'status': 'success',
+            'data': result
+        })
+
+    except Exception as e:
+        print(f"[ISL Web] Video processing error: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@socketio.on('process_recorded_video')
+def handle_process_video_socket(data):
+    """
+    SocketIO event handler to process recorded video chunk.
+    """
+    try:
+        emit('video_processing_progress', {'stage': 'decoding', 'message': 'Decoding video frames...'})
+        b64_str = data.get('video', '')
+        if ',' in b64_str:
+            b64_str = b64_str.split(',')[1]
+        video_bytes = base64.b64decode(b64_str)
+
+        emit('video_processing_progress', {'stage': 'analyzing', 'message': 'Deduplicating & extracting 2-3 keyframes per gesture...'})
+        result = video_processor.process_video(video_bytes)
+
+        emit('video_processing_complete', {
+            'status': 'success',
+            'data': result
+        })
+    except Exception as e:
+        print(f"[ISL Web] Video processing error: {e}", flush=True)
+        emit('video_processing_complete', {
+            'status': 'error',
+            'message': str(e)
+        })
 
 
 if __name__ == '__main__':

@@ -91,100 +91,226 @@
     <!-- ═══════════ DETECTOR SCREEN ═══════════ -->
     <div class="screen hidden" id="screen-detector">
 
-        <!-- Subheader -->
-        <div class="subheader">
-            <div class="subheader-left">
-                <span class="subheader-icon">🤟</span>
-                <span class="subheader-title">Sign → Text</span>
-                <span class="subheader-fps" id="fps-display">— FPS</span>
-            </div>
-            <div class="subheader-right">
-                <div class="hand-toggle">
-                    <button class="toggle-btn active" id="hand-right" data-hand="right">🖐️ Right</button>
-                    <button class="toggle-btn" id="hand-left" data-hand="left">✋ Left</button>
-                </div>
-                <button class="btn-clear" id="btn-clear">
-                    🗑 Clear
+        <!-- Mode Selector Banner -->
+        <div class="mode-selector-bar">
+            <div class="mode-tabs">
+                <button class="mode-tab active" id="tab-mode-live">
+                    <span class="mode-icon">🔴</span> Real-Time Stream
                 </button>
+                <button class="mode-tab" id="tab-mode-video">
+                    <span class="mode-icon">🎬</span> Dynamic Video Input (2-3 Keyframes/Sign)
+                </button>
+            </div>
+            <div class="mode-badge-info" id="mode-badge-info">
+                Continuous recording with smart duplicate removal & keyframe extraction
             </div>
         </div>
 
-        <!-- Main Layout -->
-        <div class="detector-layout">
-
-            <!-- Left: Camera -->
-            <div class="camera-column">
-                <div class="camera-card">
-                    <video id="video" autoplay playsinline muted class="raw-feed"></video>
-                    <canvas id="canvas" style="display:none;"></canvas>
-
-                    <!-- Base overlay when off -->
-                    <div class="camera-placeholder" id="camera-overlay">
-                        📷 Click "Start Camera" to begin
-                    </div>
-
-                    <!-- Active feed from server -->
-                    <img id="annotated-overlay" class="annotated-feed" alt="" style="display:none;">
-
-                    <!-- Status dot overlay -->
-                    <div class="camera-status" id="camera-status" style="display:none;">
-                        <div class="status-dot" id="status-dot"></div>
-                        <span id="detection-status">No Hand</span>
-                    </div>
+        <!-- ────────── MODE 1: LIVE REAL-TIME STREAM ────────── -->
+        <div class="mode-view" id="view-mode-live">
+            <!-- Subheader -->
+            <div class="subheader">
+                <div class="subheader-left">
+                    <span class="subheader-icon">🤟</span>
+                    <span class="subheader-title">Live Sign → Text</span>
+                    <span class="subheader-fps" id="fps-display">— FPS</span>
                 </div>
-
-                <button class="btn-camera-start" id="btn-camera">
-                    📷 Start Camera
-                </button>
+                <div class="subheader-right">
+                    <div class="hand-toggle">
+                        <button class="toggle-btn active" id="hand-right" data-hand="right">🖐️ Right</button>
+                        <button class="toggle-btn" id="hand-left" data-hand="left">✋ Left</button>
+                    </div>
+                    <button class="btn-clear" id="btn-clear">
+                        🗑 Clear
+                    </button>
+                </div>
             </div>
 
-            <!-- Right: Results -->
-            <div class="results-column">
+            <!-- Live Layout -->
+            <div class="detector-layout">
+                <!-- Left: Camera -->
+                <div class="camera-column">
+                    <div class="camera-card">
+                        <video id="video" autoplay playsinline muted class="raw-feed"></video>
+                        <canvas id="canvas" style="display:none;"></canvas>
 
-                <!-- Current Gesture Card -->
-                <div class="result-card">
-                    <div class="card-title">CURRENT GESTURE</div>
+                        <!-- Base overlay when off -->
+                        <div class="camera-placeholder" id="camera-overlay">
+                            📷 Click "Start Camera" to begin live tracking
+                        </div>
 
-                    <div class="current-gesture-display">
-                        <div class="predicted-word" id="predicted-word">—</div>
-                        <div class="confidence-row">
-                            <div class="progress-track">
-                                <div class="progress-fill" id="confidence-fill" style="width: 0%;"></div>
+                        <!-- Active feed from server -->
+                        <img id="annotated-overlay" class="annotated-feed" alt="" style="display:none;">
+
+                        <!-- Status dot overlay -->
+                        <div class="camera-status" id="camera-status" style="display:none;">
+                            <div class="status-dot" id="status-dot"></div>
+                            <span id="detection-status">No Hand</span>
+                        </div>
+                    </div>
+
+                    <button class="btn-camera-start" id="btn-camera">
+                        📷 Start Camera
+                    </button>
+                </div>
+
+                <!-- Right: Results -->
+                <div class="results-column">
+                    <!-- Current Gesture Card -->
+                    <div class="result-card">
+                        <div class="card-title">CURRENT GESTURE</div>
+
+                        <div class="current-gesture-display">
+                            <div class="predicted-word" id="predicted-word">—</div>
+                            <div class="confidence-row">
+                                <div class="progress-track">
+                                    <div class="progress-fill" id="confidence-fill" style="width: 0%;"></div>
+                                </div>
+                                <span class="progress-text" id="confidence-text">0%</span>
                             </div>
-                            <span class="progress-text" id="confidence-text">0%</span>
+                        </div>
+
+                        <!-- No Hand Timer -->
+                        <div class="timer-container" id="timer-container" style="display:none; margin-top: 15px;">
+                            <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Sentence finalize timer...</span>
+                            <div class="progress-track" style="margin-top: 4px;">
+                                <div class="progress-fill" id="timer-fill" style="width: 0%; background: #f39c12;"></div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- No Hand Timer -->
-                    <div class="timer-container" id="timer-container" style="display:none; margin-top: 15px;">
-                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Sentence finalize
-                            timer...</span>
-                        <div class="progress-track" style="margin-top: 4px;">
-                            <div class="progress-fill" id="timer-fill" style="width: 0%; background: #f39c12;"></div>
+                    <!-- Detected Words Card -->
+                    <div class="result-card flex-grow">
+                        <div class="card-title">DETECTED WORDS (REAL-TIME)</div>
+                        <div class="words-container" id="word-chips">
+                            <span class="words-placeholder">Words will appear here...</span>
                         </div>
-                    </div>
 
-                </div>
-
-                <!-- Detected Words Card -->
-                <div class="result-card flex-grow">
-                    <div class="card-title">DETECTED WORDS</div>
-                    <div class="words-container" id="word-chips">
-                        <span class="words-placeholder">Words will appear here...</span>
-                    </div>
-
-                    <!-- Finished sentence output container -->
-                    <div class="sentence-output" id="output-card" style="display:none;">
-                        <div class="corrected-text" id="corrected-sentence"></div>
-                        <div class="sentence-actions">
-                            <button class="btn-action" id="btn-speak">🔊 Speak</button>
-                            <button class="btn-action" id="btn-copy">📋 Copy</button>
+                        <!-- Finished sentence output container -->
+                        <div class="sentence-output" id="output-card" style="display:none;">
+                            <div class="corrected-text" id="corrected-sentence"></div>
+                            <div class="sentence-actions">
+                                <button class="btn-action" id="btn-speak">🔊 Speak</button>
+                                <button class="btn-action" id="btn-copy">📋 Copy</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
+
+        <!-- ────────── MODE 2: DYNAMIC VIDEO INPUT (RECORD & DEDUPLICATE) ────────── -->
+        <div class="mode-view hidden" id="view-mode-video">
+            <!-- Subheader -->
+            <div class="subheader">
+                <div class="subheader-left">
+                    <span class="subheader-icon">🎬</span>
+                    <span class="subheader-title">Continuous Video Input & Smart Keyframe Deduplication</span>
+                </div>
+                <div class="subheader-right">
+                    <button class="btn-clear" id="btn-clear-video">
+                        🗑 Clear Results
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Video Layout -->
+            <div class="detector-layout">
+                <!-- Left: Video Recording & Upload -->
+                <div class="camera-column">
+                    <div class="camera-card" id="video-record-card">
+                        <video id="record-preview-video" autoplay playsinline muted class="raw-feed"></video>
+                        <video id="playback-video" controls class="raw-feed" style="display:none;"></video>
+
+                        <!-- Placeholder before camera starts -->
+                        <div class="camera-placeholder" id="record-placeholder">
+                            🎥 Record a sign sequence or upload a video clip
+                        </div>
+
+                        <!-- Recording Status Indicator -->
+                        <div class="recording-badge" id="recording-badge" style="display:none;">
+                            <span class="recording-dot"></span>
+                            <span id="recording-timer">00:00</span>
+                        </div>
+                    </div>
+
+                    <div class="video-controls-row">
+                        <button class="btn-record" id="btn-start-record">
+                            🔴 Start Recording
+                        </button>
+                        <button class="btn-record-stop" id="btn-stop-record" style="display:none;">
+                            ⏹ Stop & Process Keyframes
+                        </button>
+                    </div>
+
+                    <!-- File Upload Option -->
+                    <div class="upload-dropzone" id="upload-dropzone">
+                        <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/mov,video/avi" style="display:none;">
+                        <span class="upload-icon">📁</span>
+                        <div class="upload-text">
+                            <strong>Drop a video file here</strong> or <span class="upload-browse">browse</span>
+                        </div>
+                        <div class="upload-subtext">Supports MP4, WebM, MOV clips</div>
+                    </div>
+
+                    <!-- Processing Progress Card -->
+                    <div class="processing-card" id="video-processing-card" style="display:none;">
+                        <div class="processing-header">
+                            <div class="spinner"></div>
+                            <span id="processing-status-text">Extracting frames & filtering duplicates...</span>
+                        </div>
+                        <div class="progress-track" style="margin-top: 10px;">
+                            <div class="progress-fill progress-animated" id="video-progress-fill" style="width: 100%;"></div>
+                        </div>
+                        <div class="processing-subtext">Selecting top 2–3 representative keyframes per gesture</div>
+                    </div>
+                </div>
+
+                <!-- Right: Comprehensive Results & Dictionary -->
+                <div class="results-column">
+                    <!-- Formed Sentence Card -->
+                    <div class="result-card">
+                        <div class="card-title-row">
+                            <span class="card-title">AI SYNTHESIZED SENTENCE</span>
+                            <span class="metrics-pill" id="video-metrics-pill" style="display:none;">0 frames • 0s</span>
+                        </div>
+
+                        <div class="video-sentence-box" id="video-sentence-box">
+                            <div class="sentence-placeholder" id="video-sentence-placeholder">
+                                Record or upload a video to generate the full sentence & gesture dictionary...
+                            </div>
+                            <div class="video-sentence-content" id="video-sentence-content" style="display:none;">
+                                <div class="english-sentence-label">English (AI Grammar Corrected):</div>
+                                <div class="clickable-sentence-container" id="video-clickable-sentence"></div>
+                                
+                                <div class="hindi-sentence-label" id="hindi-label" style="margin-top: 12px;">Hindi Translation:</div>
+                                <div class="hindi-sentence-text" id="video-hindi-sentence"></div>
+
+                                <div class="sentence-actions" style="margin-top: 14px;">
+                                    <button class="btn-action" id="btn-speak-video">🔊 Speak English</button>
+                                    <button class="btn-action" id="btn-copy-video">📋 Copy Sentence</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detected Gesture Dictionary Card -->
+                    <div class="result-card flex-grow">
+                        <div class="card-title-row">
+                            <span class="card-title">📖 DETECTED GESTURE DICTIONARY</span>
+                            <span class="hint-text">Click any word card to view 2–3 captured keyframes</span>
+                        </div>
+
+                        <div class="dictionary-grid" id="gesture-dictionary-grid">
+                            <div class="dictionary-empty">
+                                No gestures processed yet. Record video to see dictionary with captured frames.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- ═══════════ FUTURE SCOPE SCREEN ═══════════ -->
@@ -218,8 +344,7 @@
     <div class="screen hidden" id="screen-about">
         <div class="info-hero">
             <h1>ℹ️ About Us</h1>
-            <h2 style="color: var(--accent-purple); font-weight: 800; margin-top: -10px; margin-bottom: 20px;">"Breaking
-                silence, building bridges."</h2>
+            <h2 style="color: var(--accent-purple); font-weight: 800; margin-top: -10px; margin-bottom: 20px;">"Breaking silence, building bridges."</h2>
         </div>
         <div class="info-grid dual">
             <div class="info-card">
@@ -250,36 +375,50 @@
                 <span class="tech-tag">TensorFlow & Keras</span>
                 <span class="tech-tag">Google MediaPipe</span>
                 <span class="tech-tag">Flask Websockets</span>
-                <span class="tech-tag">OpenCV</span>
+                <span class="tech-tag">OpenCV & Deduplication Engine</span>
                 <span class="tech-tag">Gemini-2.0-Flash LLM</span>
             </div>
         </div>
 
         <div class="info-grid dual">
             <div class="info-card">
-                <h3>📊 The Custom Dataset</h3>
-                <p>Generic datasets lack the nuances needed for ISL. We built a custom data tool
-                    (<code>smart_capture.py</code>) that records hundreds of frames per sign, automatically tracking
-                    hands, tossing out empty frames, and generating robust data points for both 1-hand and 2-hand
-                    gestures.</p>
+                <h3>📊 Dynamic Video Input & Keyframe Filtering</h3>
+                <p>Continuous video streams generate hundreds of frames. Our custom deduplication algorithm tracks landmark velocity, drops redundant static poses, and extracts the top <strong>2–3 representative keyframes per gesture</strong> for accurate classification.</p>
             </div>
             <div class="info-card">
                 <h3>🧠 The Pipeline</h3>
                 <ol class="timeline-list">
-                    <li><strong>Capture:</strong> Browser webcam stream.</li>
-                    <li><strong>Track:</strong> MediaPipe extracts 3D wrist/finger landmarks.</li>
-                    <li><strong>Engineer:</strong> Compute advanced math properties (e.g., Euclidean distances, finger
-                        curl angles).</li>
-                    <li><strong>Predict:</strong> A lightweight TFLite deep neural network classifies the exact gesture.
-                    </li>
-                    <li><strong>NLP Fix:</strong> The Gemini AI transforms clunky literal words into fluent,
-                        grammatically correct sentences.</li>
+                    <li><strong>Capture:</strong> Browser camera stream or continuous video recording.</li>
+                    <li><strong>Track:</strong> MediaPipe extracts 3D wrist/finger landmarks for 1 or 2 hands.</li>
+                    <li><strong>Deduplicate:</strong> Velocity-based temporal clustering retains 2–3 apex keyframes.</li>
+                    <li><strong>Predict:</strong> Lightweight neural network classifies gestures with confidence scoring.</li>
+                    <li><strong>NLP Fix:</strong> Gemini AI reorders ISL SOV structure into fluent English & Hindi sentences.</li>
                 </ol>
             </div>
         </div>
     </div>
 
-    <!-- Gesture Snapshot Modal -->
+    <!-- ═══════════ MULTI-FRAME KEYFRAME MODAL ═══════════ -->
+    <div class="modal-overlay" id="multiframe-modal" style="display:none;">
+        <div class="modal-card wide-modal">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="modal-word-badge" id="modal-word-name">HELLO</span>
+                    <span class="modal-conf-badge" id="modal-word-conf">95% Confidence</span>
+                    <span class="modal-time-badge" id="modal-word-time">Time: 1.2s - 1.5s</span>
+                </div>
+                <button class="btn-modal-close" id="multiframe-modal-close">✕</button>
+            </div>
+            <div class="modal-description">
+                Captured <strong>2–3 representative keyframes</strong> for this gesture (redundant duplicates removed):
+            </div>
+            <div class="keyframes-gallery" id="modal-keyframes-gallery">
+                <!-- Dynamically populated keyframe cards -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Single Gesture Snapshot Modal (For Live Mode) -->
     <div class="modal-overlay" id="gesture-modal" style="display:none;">
         <div class="modal-card">
             <button class="btn-modal-close" id="modal-close">✕</button>
